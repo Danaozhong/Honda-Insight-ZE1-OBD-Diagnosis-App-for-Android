@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">HybridInsight</string>
+    <string name="title_activity_ima__battery">IMA_Battery</string>
+    <string name="title_activity_loading_screen_view">LoadingScreenViewActivity</string>
+</resources>

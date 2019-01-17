@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mainLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    app:layout_constraintLeft_toLeftOf="parent"
+    app:layout_constraintRight_toRightOf="parent"
+    tools:context="com.texelography.hybridinsight.MainView">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <GridLayout
+            android:id="@+id/valueContainer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:columnCount="2"
+            android:columnOrderPreserved="true"
+            android:orientation="horizontal"
+            android:rowCount="4"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="1.0"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_bias="0.0">
+
+            <com.texelography.hybridinsight.DataView
+                android:id="@+id/dataView2"
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                android:layout_gravity="fill"
+                app:caption="Ladestrom"
+                app:data_view_max="23"
+                app:data_view_min="0"
+                app:data_view_value="22"
+                app:zero="0" />
+
+            <com.texelography.hybridinsight.DataView
+                android:id="@+id/dataView5"
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                android:layout_gravity="fill" />
+
+            <com.texelography.hybridinsight.DataView
+                android:id="@+id/dataView"
+                android:layout_width="200dp"
+                android:layout_height="100dp"
+                android:layout_columnSpan="2"
+                android:layout_gravity="fill"
+                app:zero="0" />
+
+        </GridLayout>
+
+        <ImageView
+            android:id="@+id/imgSelection"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignBottom="@id/valueContainer"
+            android:layout_alignLeft="@id/valueContainer"
+            android:layout_alignRight="@id/valueContainer"
+            android:layout_alignTop="@id/valueContainer"
+            app:srcCompat="@color/colorLightGray"
+            tools:layout_editor_absoluteX="120dp"
+            tools:layout_editor_absoluteY="256dp" />
+    </RelativeLayout>
+
+</android.support.constraint.ConstraintLayout>

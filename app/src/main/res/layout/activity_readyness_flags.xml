@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.texelography.hybridinsight.MainView">
+
+    <TableLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <TextView
+                android:id="@+id/textView13"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Description" />
+
+            <TextView
+                android:id="@+id/textView14"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Supported" />
+
+            <TextView
+                android:id="@+id/textView15"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Status" />
+        </TableRow>
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <TextView
+                android:id="@+id/textView16"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Catalyst (CAT)" />
+
+            <CheckBox
+                android:id="@+id/chkCatalystSupported"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Supported" />
+
+            <CheckBox
+                android:id="@+id/chkCatalystCompleted"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Completed" />
+        </TableRow>
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <TextView
+                android:id="@+id/textView17"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Heated Catalyst" />
+
+            <CheckBox
+                android:id="@+id/chkHeatedCatalystSupported"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Supported" />
+
+            <CheckBox
+                android:id="@+id/chkHeatedCatalystCompleted"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Completed" />
+        </TableRow>
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <TextView
+                android:id="@+id/textView18"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Evaporative System (EVAP)" />
+
+            <CheckBox
+                android:id="@+id/chkEVAPSupported"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Supported" />
+
+            <CheckBox
+                android:id="@+id/chkEVAPCompleted"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Completed" />
+        </TableRow>
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <TextView
+                android:id="@+id/lblSecondaryAirSystem"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Secondary Air System" />
+
+            <CheckBox
+                android:id="@+id/chkSecondAirSystemSupported"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Supported" />
+
+            <CheckBox
+                android:id="@+id/chkSecondAirSystemCompleted"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Completed" />
+        </TableRow>
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" >
+
+            <TextView
+                android:id="@+id/lblOxygenSensor"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Oxygen (O2) Sensor" />
+
+            <CheckBox
+                android:id="@+id/chkO2SensorSupported"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Supported" />
+
+            <CheckBox
+                android:id="@+id/chkO2SensorCompleted"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Completed" />
+        </TableRow>
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" >
+
+            <TextView
+                android:id="@+id/textView16"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="EGR" />
+
+            <CheckBox
+                android:id="@+id/chkEGRSupported"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Supported" />
+
+            <CheckBox
+                android:id="@+id/chkEGRCompleted"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Completed" />
+        </TableRow>
+
+    </TableLayout>
+
+</android.support.constraint.ConstraintLayout>

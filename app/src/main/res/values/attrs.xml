@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="DataView">
+        <attr name="showText" format="boolean" />
+        <attr name="data_view_max" format="float" />
+        <attr name="data_view_min" format="float" />
+        <attr name="zero" format="float" />
+        <attr name="data_view_value" format="float" />
+        <attr name="caption" format="string" />
+        <attr name="data_view_unit" format="string" />
+        <attr name="barColor" format="color" />
+        <attr name="frameColor" format="color" />
+        <attr name="fontColor" format="color" />
+        <attr name="labelPosition" format="enum">
+            <enum name="left" value="0"/>
+            <enum name="right" value="1"/>
+        </attr>
+
+    </declare-styleable>
+    <declare-styleable name="OBDValueListEntry">
+        <attr name="obd_value_list_caption" format="string" />
+        <attr name="obd_value_list_unit" format="string" />
+        <attr name="obd_value_list_value" format="float" />
+        <attr name="obd_value_list_min" format="float" />
+        <attr name="obd_value_list_max" format="float" />
+        <attr name="obd_value_list_zero" format="float" />
+        <attr name="obd_value_list_checked" format="boolean" />
+    </declare-styleable>
+</resources>
