@@ -64,6 +64,25 @@ import junit.framework.Test;
 
 class OBDDataViewLayoutParameters implements Cloneable
 {
+    public OBDDataViewLayoutParameters(int iCol, int iRow, int iColspan, int iRowspan)
+    {
+        miColspan = iColspan;
+        miRowspan = iRowspan;
+        miRow = iRow;
+        miCol = iCol;
+        mboVisible = true;
+    }
+
+    /** Default constructor */
+    public OBDDataViewLayoutParameters()
+    {
+        miColspan = 1;
+        miRowspan = 1;
+        miRow = 0;
+        miCol = 0;
+        mboVisible = true;
+    }
+
     public int miColspan;
     public int miRowspan;
     public int miRow;
@@ -73,6 +92,8 @@ class OBDDataViewLayoutParameters implements Cloneable
     {
         return miColspan * miRowspan;
     }
+
+    public boolean mboVisible;
 
     @Override
     public OBDDataViewLayoutParameters clone() throws CloneNotSupportedException
@@ -110,7 +131,7 @@ public class MainView extends AppCompatActivity implements View.OnLongClickListe
     /* Container of all OBD views used in the form */
     private List<DataView> obdDataViews = new ArrayList<DataView>();
     private List<OBDDataViewLayoutParameters> obdDataViewLayoutParams = new ArrayList<OBDDataViewLayoutParameters>();
-    private Map<Integer, PointerParameters> maoPointerParameters = new HashMap<Integer, PointerParameters>();
+    private SparseArray<PointerParameters> maoPointerParameters = new SparseArray<PointerParameters>();
 
     // This list is only valid while the items are moved
     private List<OBDDataViewLayoutParameters> obdDataViewDuringMoveLayoutParams = new ArrayList<OBDDataViewLayoutParameters>();
@@ -154,6 +175,11 @@ public class MainView extends AppCompatActivity implements View.OnLongClickListe
         return table;
     }
 
+    private Point oGetCoordinatesCell(Point point)
+    {
+        return oGetCoordinatesCell(point.x, point.y);
+    }
+
     private Point oGetCoordinatesCell(int iX, int iY)
     {
         return(new Point(iX / this.miCellWidth, iY / this.miCellHeight));
@@ -195,6 +221,21 @@ public class MainView extends AppCompatActivity implements View.OnLongClickListe
             }
         }
         return cache;
+    }
+
+    private Point oFindFirstCell(int[][] aaiTable, int iWidth, int iHeight, int iValue)
+    {
+        for (int iX = 0; iX < iWidth; iX++)
+        {
+            for (int iY = 0; iY < iHeight; iY++)
+            {
+                if (aaiTable[iX][iY] == iValue)
+                {
+                    return new Point(iX, iY);
+                }
+            }
+        }
+        return null;
     }
 
     private Rect oFindLargestRect(int[][] aaiTable, int iWidth, int iHeight, int iValue)
@@ -248,40 +289,53 @@ public class MainView extends AppCompatActivity implements View.OnLongClickListe
         }
         return new Rect(best_ll.y, best_ll.x, best_ur.y + 1, best_ur.x + 1);
     }
-    /*
-
-    Idee:
-    Use two algorithms
-    a) for move
-    -a) when moving 1x1 cells, swap positions
-    -b) when moving larger than 1x1 cells:
-    --a) element is fully replaced: swap positions
-    --b) element is not fully replaced: shrink the old element
-
-    b) for resize (row, colum, or both added)
-    -a) new element completely covered: remember, search for a new spot after completing resize
-    -b) new element only partly cut: shrink
-
-    Shrink algorithm: after resize, find the largest rect that has all parameters
+    /**
+     * \brief This function moves an OBD Value item to a new position, supporting both moving and
+     * resizing (also at the same time).
+     * \param[in/out] oLayout The layout parameters. Will be altered to represent the new position.
+     * \param[in] NumOfCols the number of cols of the screen.
+     * \param[in] NumOfRows The number of rows of the screen.
     */
-    private List<OBDDataViewLayoutParameters> vMoveObdValueItem(final int obdValueItem, OBDDataViewLayoutParameters oNewPosition)
+    private int iMoveObdValueItem( List<OBDDataViewLayoutParameters> oLayout,
+                                   final int iNumOfCols, final int iNumOfRows,
+                                   final int obdValueItem, final OBDDataViewLayoutParameters oNewPosition)
+
     {
         // Check that parameters are valid
         if (oNewPosition.miRowspan == 0 || oNewPosition.miColspan == 0
-                || oNewPosition.miRow < 0 || oNewPosition.miCol < 0)
+                || oNewPosition.miRow < 0 || oNewPosition.miCol < 0
+                || oNewPosition.miRow + oNewPosition.miRowspan > iNumOfRows
+                || oNewPosition.miCol + oNewPosition.miColspan > iNumOfCols )
         {
-            return null;
+            return -1;
         }
 
         // Save old position
-        OBDDataViewLayoutParameters oOldPosition = this.obdDataViewLayoutParams.get(obdValueItem);
-
+        OBDDataViewLayoutParameters oOldPosition = null;
+        try
+        {
+            oOldPosition = oLayout.get(obdValueItem).clone();
+        }
+        catch (CloneNotSupportedException e)
+        {
+            e.printStackTrace();
+        }
         // Create a table with the current items
         int[][] aaiTable = this.aaiCreateTable();
+
+        // Mark the old position as available
+        for (int idX = 0; idX < oOldPosition.miColspan; idX++)
+        {
+            for (int idY = 0; idY < oOldPosition.miRowspan; idY++)
+            {
+                aaiTable[oOldPosition.miCol + idX][oOldPosition.miRow + idY] = -1;
+            }
+        }
 
         // Map to keep track of all the points that need to be relocated
         SparseArray<ArrayList<Point>> aoOccupiedCells = new SparseArray<ArrayList<Point>>();
 
+        // Find all other view elements that are where the OBV value item is moved to
         for (int idX = 0; idX < oNewPosition.miColspan; idX++)
         {
             for (int idY = 0; idY < oNewPosition.miRowspan; idY++)
@@ -289,8 +343,9 @@ public class MainView extends AppCompatActivity implements View.OnLongClickListe
                 int iX = oNewPosition.miCol + idX;
                 int iY = oNewPosition.miRow + idY;
 
-                int iKey = aaiTable[iX][iY];
-                if (iKey >= 0)
+                // the field value is the index (iterator) of the OBD views
+                final int iKey = aaiTable[iX][iY];
+                if (iKey >= 0 && iKey != obdValueItem)
                 {
                     // Check if the OBD Value bar is already in the list
                     if ( aoOccupiedCells.get(iKey) == null)
@@ -300,48 +355,44 @@ public class MainView extends AppCompatActivity implements View.OnLongClickListe
                     }
                     // Add the point which is to be removed
                     aoOccupiedCells.get(iKey).add(new Point(iX, iY));
-
-                    // mark the field as occupied by the item moved here
-                    aaiTable[iX][iY] = obdValueItem;
                 }
-
+                // mark the field as occupied by the item moved here
+                aaiTable[iX][iY] = obdValueItem;
             }
-        }
-
-        // Deepcopy the current layout params to manipulate them.
-        List<OBDDataViewLayoutParameters> aNewLayoutParams = new ArrayList<>();
-
-        try
-        {
-            for(OBDDataViewLayoutParameters param : obdDataViewLayoutParams)
-            {
-                aNewLayoutParams.add(param.clone());
-            }
-        } catch (CloneNotSupportedException e) {
-            e.printStackTrace();
         }
 
         // Update the position of the moved item
-        aNewLayoutParams.set(obdValueItem, oNewPosition);
-        // Calculate move delta
+        try
+        {
+            oLayout.set(obdValueItem, oNewPosition.clone());
+        }
+        catch (CloneNotSupportedException e)
+        {
+            e.printStackTrace();
+        }
 
-        // TODO this will not work for resizing as well!
-        int iMovedX = oNewPosition.miCol - oOldPosition.miCol;
-        int iMovedY = oNewPosition.miRow - oOldPosition.miRow;
-
-        iMovedX += Integer.signum(iMovedX) * (oOldPosition.miColspan - 1);
-        iMovedY += Integer.signum(iMovedY) * (oOldPosition.miRowspan - 1);
-
-
-        for(int i = 0; i < aoOccupiedCells.size(); i++) {
+        for(int i = 0; i < aoOccupiedCells.size(); i++)
+        {
             int key = aoOccupiedCells.keyAt(i);
             ArrayList<Point> aRemovedPoints = aoOccupiedCells.get(key);
-            if (aRemovedPoints.size() == this.obdDataViewLayoutParams.get(key).iGetArea())
+            if (aRemovedPoints.size() == oLayout.get(key).iGetArea())
             {
-                // data view is fully covered, move to the position where the other view comes from
-                // Because we move it where the other came from, subtract
-                aNewLayoutParams.get(key).miCol -= iMovedX;
-                aNewLayoutParams.get(key).miRow -= iMovedY;
+                // data view is fully covered, find a new place for it.
+                Point oOccupiedViewNewPosition = oFindFirstCell(aaiTable, iNumOfCols, iNumOfRows, -1);
+                if (oOccupiedViewNewPosition != null)
+                {
+                    // New position found, move to new position
+                    oLayout.get(key).miRow = oOccupiedViewNewPosition.y;
+                    oLayout.get(key).miCol = oOccupiedViewNewPosition.x;
+                    oLayout.get(key).miRowspan = 1;
+                    oLayout.get(key).miColspan = 1;
+                    aaiTable[oOccupiedViewNewPosition.x][oOccupiedViewNewPosition.y] = key;
+                }
+                else
+                {
+                    // Mark the item to be deleted (does not fit into the view)
+                    oLayout.get(key).mboVisible = false;
+                }
 
             }
             else
@@ -349,20 +400,21 @@ public class MainView extends AppCompatActivity implements View.OnLongClickListe
                 // data view only partially covered, resize...
                 Rect oLargestRemainingRect = oFindLargestRect(aaiTable, i32NumOfCols, i32NumOfRows, key);
 
-                aNewLayoutParams.get(key).miCol = oLargestRemainingRect.left;
-                aNewLayoutParams.get(key).miRow = oLargestRemainingRect.top;
-                aNewLayoutParams.get(key).miColspan = oLargestRemainingRect.right - oLargestRemainingRect.left;
-                aNewLayoutParams.get(key).miRowspan = oLargestRemainingRect.bottom - oLargestRemainingRect.top;
+                oLayout.get(key).miCol = oLargestRemainingRect.left;
+                oLayout.get(key).miRow = oLargestRemainingRect.top;
+                oLayout.get(key).miColspan = oLargestRemainingRect.right - oLargestRemainingRect.left;
+                oLayout.get(key).miRowspan = oLargestRemainingRect.bottom - oLargestRemainingRect.top;
             }
         }
-        return aNewLayoutParams;
+        return 0;
     }
 
-
+    // TODO This does not only redraw, but also recalculate. Split up
     private void vRedrawEditModeRect()
     {
         Rect oRedRectDimensions = new Rect();
-        List<OBDDataViewLayoutParameters> aNewLayoutParams = new ArrayList<>();
+        boolean boRedraw = false;
+        OBDDataViewLayoutParameters newLayoutParams = null;
 
         // Check which edit mode is currently active (move or resize)
         switch(this.enGUIEditMode)
@@ -379,12 +431,12 @@ public class MainView extends AppCompatActivity implements View.OnLongClickListe
 
                 OBDDataViewLayoutParameters param = this.obdDataViewLayoutParams.get(miSelectedOBDBar);
 
-                OBDDataViewLayoutParameters newLayoutParams = new OBDDataViewLayoutParameters();
-
                 int newPosAbsX = param.miCol + delta.x;
                 int newPosAbsY = param.miRow + delta.y;
-                newLayoutParams.miCol = Math.max(newPosAbsX, 0);
-                newLayoutParams.miRow = Math.max(newPosAbsY, 0);
+
+
+                newLayoutParams = new OBDDataViewLayoutParameters(
+                        Math.max(newPosAbsX, 0), Math.max(newPosAbsY, 0), 1, 1);
 
                 // Right/bottom side crop
                 newLayoutParams.miColspan = Math.min(param.miColspan, i32NumOfCols - newLayoutParams.miCol);
@@ -394,78 +446,93 @@ public class MainView extends AppCompatActivity implements View.OnLongClickListe
                 newLayoutParams.miColspan += (newPosAbsX - newLayoutParams.miCol);
                 newLayoutParams.miRowspan += (newPosAbsY - newLayoutParams.miRow);
 
-                Log.d("RESIZE", "New coords, col: " + Integer.toString(newLayoutParams.miCol) + ", row: " + Integer.toString(newLayoutParams.miRow));
-                Log.d("RESIZE", "New span, col: " + Integer.toString(newLayoutParams.miColspan) + ", row: " + Integer.toString(newLayoutParams.miRowspan));
-
-
-                aNewLayoutParams = vMoveObdValueItem(miSelectedOBDBar, newLayoutParams);
-                if (null != aNewLayoutParams)
-                {
-                    //this.vUpdateMainView(aNewLayoutParams);
-                }
-                // Calculate the new size after moving, make sure to wrap if moving outside of the window.
-                oRedRectDimensions.left =  newLayoutParams.miCol * miCellWidth;
-                oRedRectDimensions.top =  newLayoutParams.miRow * miCellHeight;
-                oRedRectDimensions.right = (newLayoutParams.miCol + newLayoutParams.miColspan) * miCellWidth;
-                oRedRectDimensions.bottom = (newLayoutParams.miRow + newLayoutParams.miRowspan) * miCellHeight;
+                boRedraw = true;
                 break;
             }
             case EDIT_MODE_RESIZE:
             {
                 OBDDataViewLayoutParameters param = this.obdDataViewLayoutParams.get(miSelectedOBDBar);
-                Point minPos = new Point(param.miCol, param.miRow);
-                Point maxPos = new Point(param.miCol + param.miColspan - 1, param.miRow + param.miRowspan - 1);
-                for (PointerParameters value : maoPointerParameters.values())
+
+                if (maoPointerParameters.size() < 2)
                 {
-                    Point currentCell = oGetCoordinatesCell((int)value.mfX, (int)value.mfY);
-                    minPos.x = Math.min(currentCell.x, minPos.x);
-                    minPos.y = Math.min(currentCell.y, minPos.y);
-
-                    maxPos.x = Math.max(currentCell.x, maxPos.x);
-                    maxPos.y = Math.max(currentCell.y, maxPos.y);
+                    // TODO store exception
+                    this.enGUIEditMode = OBDDataEditMode.EDIT_MODE_NONE;
                 }
+                else
+                {
+                    Point minPos = oGetCoordinatesCell((int)maoPointerParameters.valueAt(0).mfX, (int)maoPointerParameters.valueAt(0).mfY);
+                    Point maxPos = new Point(minPos);
 
-                oRedRectDimensions.left = minPos.x * miCellWidth;
-                oRedRectDimensions.top = minPos.y * miCellHeight;
-                oRedRectDimensions.right = (maxPos.x + 1) * miCellWidth;
-                oRedRectDimensions.bottom = (maxPos.y + 1) * miCellHeight;
+                    for (int i = 0; i < maoPointerParameters.size(); ++i)
+                    {
+                        PointerParameters value = maoPointerParameters.valueAt(i);
+                        Point currentCell = oGetCoordinatesCell((int) value.mfX, (int) value.mfY);
+                        minPos.x = Math.min(currentCell.x, minPos.x);
+                        minPos.y = Math.min(currentCell.y, minPos.y);
+
+                        maxPos.x = Math.max(currentCell.x, maxPos.x);
+                        maxPos.y = Math.max(currentCell.y, maxPos.y);
+                    }
+
+                    newLayoutParams = new OBDDataViewLayoutParameters();
+                    newLayoutParams.miRow = minPos.y;
+                    newLayoutParams.miCol = minPos.x;
+                    newLayoutParams.miRowspan = maxPos.y - minPos.y + 1;
+                    newLayoutParams.miColspan = maxPos.x - minPos.x + 1;
+                    boRedraw = true;
+                }
 
                 break;
             }
         }
+
+        if(boRedraw == true)
+        {
+                /* Create new layout parameters that would represent the new location of the
+                elements, but do not activate them yet. They will become valid after the user has
+                lift off their fingers.
+                 */
+            this.obdDataViewDuringMoveLayoutParams = new ArrayList<>();
+
+            try
+            {
+                for (OBDDataViewLayoutParameters oParameter : this.obdDataViewLayoutParams)
+                {
+                    this.obdDataViewDuringMoveLayoutParams.add(oParameter.clone());
+                }
+            } catch (CloneNotSupportedException e)
+            {
+                e.printStackTrace();
+            }
+
+            if (0 == iMoveObdValueItem(this.obdDataViewDuringMoveLayoutParams, i32NumOfCols, i32NumOfRows, miSelectedOBDBar, newLayoutParams))
+            {
+                // Create a preview
+                this.vUpdateMainView(this.obdDataViewDuringMoveLayoutParams);
+            }
+            // Calculate the new size after moving
+            oRedRectDimensions.left =  newLayoutParams.miCol * miCellWidth;
+            oRedRectDimensions.top =  newLayoutParams.miRow * miCellHeight;
+            oRedRectDimensions.right = (newLayoutParams.miCol + newLayoutParams.miColspan) * miCellWidth;
+            oRedRectDimensions.bottom = (newLayoutParams.miRow + newLayoutParams.miRowspan) * miCellHeight;
+        }
+
         ImageView imageView = (ImageView) findViewById(R.id.imgSelection);
         OBDDataViewLayoutParameters layoutParameters = this.obdDataViewLayoutParams.get(this.miSelectedOBDBar);
         Bitmap bmp=Bitmap.createBitmap(imageView.getWidth(), imageView.getHeight(), Bitmap.Config.ARGB_8888);
         Canvas cnvs=new Canvas(bmp);
 
+        cnvs.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
         Paint paint=new Paint();
         paint.setColor(Color.RED);
-
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(8);
-
-        Toast.makeText(getApplicationContext(), "Colspan " + layoutParameters.miColspan + ", rospan: " + layoutParameters.miRowspan, Toast.LENGTH_LONG).show();
-
-        cnvs.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
-        //cnvs.translate(0.0f, 0.0f);
-
-        //Paint transparentPaint = new Paint();
-        //transparentPaint.setColor(getResources().getColor(android.R.color.transparent));
-        //transparentPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
-
-        float x = (float)layoutParameters.miCol * (float)miCellWidth;
-        float y = (float)layoutParameters.miRow * (float)miCellHeight;
-        float width = layoutParameters.miColspan * miCellWidth;
-        float height = (float)layoutParameters.miRowspan * (float) miCellHeight;
-        cnvs.drawRect(x, y, x + width, y + height, paint);
-
-        paint.setColor(Color.BLUE);
         cnvs.drawRect(oRedRectDimensions, paint);
 
         paint.setColor(Color.GREEN);
-
-        for (PointerParameters value : maoPointerParameters.values())
+        for (int i = 0; i < maoPointerParameters.size(); i++)
         {
+            PointerParameters value = maoPointerParameters.valueAt(i);
             cnvs.drawCircle(value.mfX, value.mfY, 10.0f, paint);
         }
 
@@ -481,12 +548,23 @@ public class MainView extends AppCompatActivity implements View.OnLongClickListe
             DataView oOBDDataView = obdDataViews.get(i);
             OBDDataViewLayoutParameters layoutParameter = aLayoutParams.get(i);
 
-            if (layoutParameter.miRow + layoutParameter.miRowspan - 1 > gridLayout.getRowCount() ||
-                    layoutParameter.miCol + layoutParameter.miColspan - 1 > gridLayout.getColumnCount())
+            if (layoutParameter.mboVisible == false)
             {
-                // Exception invalid layout
+                // Element is not supposed to be seen.
+                oOBDDataView.setVisibility(View.INVISIBLE);
                 continue;
             }
+
+            if (layoutParameter.miRow + layoutParameter.miRowspan - 1 > gridLayout.getRowCount() ||
+                    layoutParameter.miCol + layoutParameter.miColspan - 1 > gridLayout.getColumnCount()
+                    )
+            {
+                // TODO Exception invalid layout
+                oOBDDataView.setVisibility(View.INVISIBLE);
+                continue;
+            }
+
+            oOBDDataView.setVisibility(View.VISIBLE);
 
             GridLayout.Spec rowSpec = GridLayout.spec(layoutParameter.miRow, layoutParameter.miRowspan);
             GridLayout.Spec colSpec = GridLayout.spec(layoutParameter.miCol, layoutParameter.miColspan);
@@ -528,6 +606,22 @@ public class MainView extends AppCompatActivity implements View.OnLongClickListe
         vRedrawEditModeRect();
     }
 
+    private void vTakeOverMoveLayoutParameters()
+    {
+        // Take over the current moving parameters and apply them.
+        for (int i = 0; i < this.obdDataViewLayoutParams.size(); ++i)
+        {
+            try
+            {
+                this.obdDataViewLayoutParams.set(i, this.obdDataViewDuringMoveLayoutParams.get(i).clone());
+            }
+            catch (CloneNotSupportedException e)
+            {
+                e.printStackTrace();
+            }
+        }
+    }
+
     //private int mActivePointerId;
 
     // The ‘active pointer’ is the one currently moving our object.
@@ -540,6 +634,8 @@ public class MainView extends AppCompatActivity implements View.OnLongClickListe
     private float mPosX;
     private float mPosY;
 
+    // The ‘active pointer’ is the one currently moving our object.
+    //private int mActivePointerId = INVALID_POINTER_ID;
 
 
         @Override
@@ -562,7 +658,7 @@ public class MainView extends AppCompatActivity implements View.OnLongClickListe
 
         if (this.enGUIEditMode == OBDDataEditMode.EDIT_MODE_NONE)
         {
-            return false;
+        //    return false;
         }
         final int action = MotionEventCompat.getActionMasked(event);
 
@@ -580,8 +676,15 @@ public class MainView extends AppCompatActivity implements View.OnLongClickListe
                 this.mfDownY = y;
                 int iPointerId = MotionEventCompat.getPointerId(event, 0);
 
+                // save the ID of this pointer (this is the main pointer)
+                mActivePointerId = iPointerId;
                 maoPointerParameters.put(iPointerId, new PointerParameters(x,y));
-                vRedrawEditModeRect();
+
+                if (this.enGUIEditMode != OBDDataEditMode.EDIT_MODE_NONE)
+                {
+                    vRedrawEditModeRect();
+                }
+
 
                 Log.d("MTOUCH","Action down, pid: " + Integer.toString(iPointerId) + ", x: " + Float.toString(x) + ", y: " + Float.toString(y));
 
@@ -591,18 +694,25 @@ public class MainView extends AppCompatActivity implements View.OnLongClickListe
             case MotionEvent.ACTION_POINTER_DOWN: {
                 Log.d("MTOUCH","Action pointer down");
                 final int pointerIndex = MotionEventCompat.getActionIndex(event);
+
                 if (-1 == pointerIndex)
                 {
                     return false;
                 }
+                int iPointerId = MotionEventCompat.getPointerId(event, pointerIndex);
+
                 final float x = MotionEventCompat.getX(event, pointerIndex);
                 final float y = MotionEventCompat.getY(event, pointerIndex);
                 //int iPointerId = MotionEventCompat.getPointerId(event, 0);
-                maoPointerParameters.put(pointerIndex, new PointerParameters(x,y));
+                maoPointerParameters.put(iPointerId, new PointerParameters(x,y));
                 enGUIEditMode = OBDDataEditMode.EDIT_MODE_RESIZE;
-                vRedrawEditModeRect();
+                if (this.enGUIEditMode != OBDDataEditMode.EDIT_MODE_NONE)
+                {
+                    vTakeOverMoveLayoutParameters();
+                    vRedrawEditModeRect();
+                }
 
-                Log.d("MTOUCH","Action pointer down, pid: " + Integer.toString(pointerIndex) + ", x: " + Float.toString(x) + ", y: " + Float.toString(y));
+                Log.d("MTOUCH","Action pointer down, pid: " + Integer.toString(iPointerId) + ", x: " + Float.toString(x) + ", y: " + Float.toString(y));
 
 
                 break;
@@ -610,53 +720,52 @@ public class MainView extends AppCompatActivity implements View.OnLongClickListe
             case MotionEvent.ACTION_MOVE: {
                 // Find the index of the active pointer and fetch its position
                 boolean found = false;
-                for (int pointerId : this.maoPointerParameters.keySet())
+
+                for(int i = 0; i < maoPointerParameters.size(); i++)
                 {
+                    int pointerId = maoPointerParameters.keyAt(i);
+
                     final int pointerIndex =  MotionEventCompat.findPointerIndex(event, pointerId);
+                    Log.d("MTOUCH","pid: " + Integer.toString(pointerId) + ", pointer index: " + Integer.toString(pointerIndex));
                     if (-1 == pointerIndex)
                     {
                         continue;
                     }
 
                     found = true;
-                    int iPointerId = MotionEventCompat.getPointerId(event, pointerIndex);
 
-                    if (pointerIndex == 0)
+                    // remember the position of the main cursor
+                    if (pointerIndex == mActivePointerId)
                     {
                         mPosX = event.getX();
                         mPosY = event.getY();
                     }
-                    PointerParameters params = maoPointerParameters.get(pointerId);
-                    params.mfX = MotionEventCompat.getX(event, pointerId);
-                    params.mfY = MotionEventCompat.getY(event, pointerId);
 
-                    vRedrawEditModeRect();
+                    PointerParameters params = maoPointerParameters.get(pointerId);
+                    params.mfX = MotionEventCompat.getX(event, pointerIndex);
+                    params.mfY = MotionEventCompat.getY(event, pointerIndex);
+
+                    if (this.enGUIEditMode != OBDDataEditMode.EDIT_MODE_NONE)
+                    {
+
+                        vRedrawEditModeRect();
+                    }
 
                     Log.d("MTOUCH","Action move, pointer id: " + Integer.toString(pointerId) + ", x: " + Float.toString(params.mfX) + ", y: " + Float.toString(params.mfX));
                 }
 
                 if (found == false)
                 {
-                    Log.d("MTOUCH","NOT FOUND! move, pointer id!");
+                    Log.d("MTOUCH","NOT FOUND! move, pointer id:");
                 }
-                // Calculate the distance moved
-                //final float dx = x - mLastTouchX;
-                //final float dy = y - mLastTouchY;
-
-                //mPosX += dx;
-                //mPosY += dy;
-
-                //invalidate();
-
-                // Remember this touch position for the next move event
-                //mLastTouchX = x;
-                //mLastTouchY = y;
-
                 break;
             }
 
             case MotionEvent.ACTION_UP: {
                 mActivePointerId = INVALID_POINTER_ID;
+                this.maoPointerParameters.clear();
+
+                this.vDisableResizeMode(true);
 
                 Log.d("MTOUCH","Action up!");
                 break;
@@ -665,11 +774,14 @@ public class MainView extends AppCompatActivity implements View.OnLongClickListe
             case MotionEvent.ACTION_CANCEL: {
                 Log.d("MTOUCH","Action cancel!");
                 mActivePointerId = INVALID_POINTER_ID;
+                this.maoPointerParameters.clear();
+
+                this.vDisableResizeMode(true);
                 break;
             }
 
             case MotionEvent.ACTION_POINTER_UP: {
-
+                Log.d("MTOUCH","Action Pointer up!");
                 final int pointerIndex = MotionEventCompat.getActionIndex(event);
                 final int pointerId = MotionEventCompat.getPointerId(event, pointerIndex);
 
@@ -679,27 +791,33 @@ public class MainView extends AppCompatActivity implements View.OnLongClickListe
 
                 }
 
-                vRedrawEditModeRect();
+                // BLABLA just finish everything and apply the new size + position
+                mActivePointerId = INVALID_POINTER_ID;
+                this.maoPointerParameters.clear();
+
+                this.vDisableResizeMode(true);
                 if (pointerId == mActivePointerId) {
-                    enGUIEditMode = OBDDataEditMode.EDIT_MODE_MOVE;
+                    //enGUIEditMode = OBDDataEditMode.EDIT_MODE_MOVE;
                     // This was our active pointer going up. Choose a new
                     // active pointer and adjust accordingly.
                     final int newPointerIndex = pointerIndex == 0 ? 1 : 0;
-                    //mLastTouchX = MotionEventCompat.getX(event, newPointerIndex);
-                    //mLastTouchY = MotionEventCompat.getY(event, newPointerIndex);
-
-                   // Log.d("MTOUCH","Action pointer up,last x: " + Float.toString(mLastTouchX) + ", y: " + Float.toString(mLastTouchY));
-
                     mActivePointerId = MotionEventCompat.getPointerId(event, newPointerIndex);
                 }
+
+
+
                 break;
             }
         }
         return false;
     }
 
-    private void vDisableResizeMode()
+    private void vDisableResizeMode(boolean boTakeOverModeParameters)
     {
+        if (true == boTakeOverModeParameters)
+        {
+            this.vTakeOverMoveLayoutParameters();
+        }
         this.mboEditMode = false;
         this.enGUIEditMode = OBDDataEditMode.EDIT_MODE_NONE;
         ImageView imageView = (ImageView) findViewById(R.id.imgSelection);
@@ -929,7 +1047,7 @@ public class MainView extends AppCompatActivity implements View.OnLongClickListe
 
     public void clearMainView()
     {
-        vDisableResizeMode();
+        vDisableResizeMode(false);
 
         /* Clear the old (dummy) GUI content */
         GridLayout gridLayout = (GridLayout) findViewById(R.id.valueContainer);
