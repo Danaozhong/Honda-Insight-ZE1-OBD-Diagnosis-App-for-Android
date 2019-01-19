@@ -8,24 +8,27 @@
     tools:layout_editor_absoluteY="81dp">
 
     <ProgressBar
-        android:id="@+id/prg_loading"
+        android:id="@+id/prgLoading"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginStart="8dp"
         android:layout_marginTop="8dp"
         android:max="10"
         android:progress="5"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        tools:layout_editor_absoluteX="140dp" />
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
-        android:id="@+id/txt_StartProgress"
+        android:id="@+id/txtProgress"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:text="TextView"
-        app:layout_constraintEnd_toEndOf="@+id/prg_loading"
-        app:layout_constraintStart_toStartOf="@+id/prg_loading"
-        app:layout_constraintTop_toBottomOf="@+id/prg_loading" />
+        app:layout_constraintEnd_toEndOf="@+id/prgLoading"
+        app:layout_constraintStart_toStartOf="@+id/prgLoading"
+        app:layout_constraintTop_toBottomOf="@+id/prgLoading" />
 </android.support.constraint.ConstraintLayout>

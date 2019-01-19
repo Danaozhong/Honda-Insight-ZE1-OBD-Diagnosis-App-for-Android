@@ -70,7 +70,7 @@ void thread_communication_main()
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_texelography_hybridinsight_MainView_android_1on_1create_1form(JNIEnv *env, jobject obj)
+Java_com_texelography_hybridinsight_SplashViewActivity_android_1on_1create_1form(JNIEnv *env, jobject obj)
 {
     /* First, get the Java VM - to be used in other threads */
     jint result = env->GetJavaVM(&java_vm);

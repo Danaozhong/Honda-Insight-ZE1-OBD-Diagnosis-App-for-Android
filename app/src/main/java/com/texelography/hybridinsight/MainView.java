@@ -59,6 +59,8 @@ import com.texelography.hybridinsight.datapool.DataPoolDisplayedElementData;
 import com.texelography.hybridinsight.datapool.DataPoolOBDData;
 import com.texelography.hybridinsight.datapool.data_pool;
 
+
+
 import junit.framework.Test;
 
 
@@ -125,9 +127,6 @@ enum OBDDataEditMode
 
 public class MainView extends AppCompatActivity implements View.OnLongClickListener, View.OnTouchListener
 {
-
-
-
     /* Container of all OBD views used in the form */
     private List<DataView> obdDataViews = new ArrayList<DataView>();
     private List<OBDDataViewLayoutParameters> obdDataViewLayoutParams = new ArrayList<OBDDataViewLayoutParameters>();
@@ -148,11 +147,6 @@ public class MainView extends AppCompatActivity implements View.OnLongClickListe
 
     private int mInterval = 50; // Update the OBD values every 50ms
     private Handler mHandler;
-
-    // Used to load the 'native-lib' library on application startup.
-    static {
-        System.loadLibrary("native-lib");
-    }
 
     private static final int MENU_ITEM_ALL_OBDII_VALUES = 0;
     private static final int MENU_ITEM_DTC = 1;
@@ -804,8 +798,6 @@ public class MainView extends AppCompatActivity implements View.OnLongClickListe
                     mActivePointerId = MotionEventCompat.getPointerId(event, newPointerIndex);
                 }
 
-
-
                 break;
             }
         }
@@ -894,7 +886,6 @@ public class MainView extends AppCompatActivity implements View.OnLongClickListe
     private int objindex = 0;
     public int createOBDValueBar(float min, float max, float zero, float value, String description, final String unit)
     {
-
         if(min < max)
         {
             max = min;
@@ -936,29 +927,12 @@ public class MainView extends AppCompatActivity implements View.OnLongClickListe
         // Load the layout parameters
         OBDDataViewLayoutParameters layoutParameter = obdDataViewLayoutParams.get(obdValueBarIndex);
 
-
         // add the OBD Value bar to the GridLayout
         DataView obdValueBar = obdDataViews.get(obdValueBarIndex);
 
-        // Set cell size
-        //LayoutParams currentLayoutparam = obdValueBar.getLayoutParams();
-        //currentLayoutparam.width = miCellWidth * layoutParameter.miColspan;
-        //currentLayoutparam.height = miCellHeight * layoutParameter.miRowspan;
-        //obdValueBar.setLayoutParams(currentLayoutparam);
-
-        // Grid View Position and col / rowspan
         gridLayout.addView(obdValueBar);
-        // Register for long-click listener
-        //obdValueBar.setOnLongClickListener(this);
-        //obdValueBar.setOnTouchListener(this);
-
         gridLayout.setOnLongClickListener(this);
         gridLayout.setOnTouchListener(this);
-
-        //obdValueBar.setClickable(false);
-        //gridLayout.setClickable(false);
-
-
     }
 
     public void setOBDValueVarValue(final int obdValueBarIndex, final float min, final float max, final float zero, final float value)
@@ -973,76 +947,6 @@ public class MainView extends AppCompatActivity implements View.OnLongClickListe
                 vg.invalidate();
             }
         });
-    }
-
-    private final static int REQUEST_ENABLE_BT = 1;
-    private BluetoothService mBluetoothService;
-    // Code to manage Service lifecycle.
-    private final ServiceConnection mServiceConnection = new ServiceConnection()
-    {
-
-        @Override
-        public void onServiceConnected(ComponentName componentName, IBinder service) {
-            mBluetoothService = ((BluetoothService.LocalBinder) service).getService();
-            if (!mBluetoothService.initialize()) {
-                Log.e("BT initialization", "Unable to initialize Bluetooth");
-                finish();
-            }
-            // Automatically connects to the device upon successful start-up initialization.
-            mBluetoothService.connect("Test123");
-
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName componentName) {
-            mBluetoothService = null;
-        }
-    };
-
-    protected void initializeBLE()
-    {
-        if (ContextCompat.checkSelfPermission(this,
-                Manifest.permission.ACCESS_COARSE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
-
-            // No explanation needed, we can request the permission.
-
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.ACCESS_COARSE_LOCATION},
-                    1234);
-        }
-
-        if (ContextCompat.checkSelfPermission(this,
-                Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
-
-            // No explanation needed, we can request the permission.
-
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                    1234);
-        }
-
-        BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        if (mBluetoothAdapter == null)
-        {
-            // Device doesn't support Bluetooth
-            Log.e("BT initialization", "Devide does not support Bluetooth, app will not work properly!");
-        }
-        else
-        {
-            if (!mBluetoothAdapter.isEnabled())
-            {
-                Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-                startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
-            }
-
-
-            Intent gattServiceIntent = new Intent(this, BluetoothService.class);
-            bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
-        }
-
-
     }
 
     public void clearMainView()
@@ -1092,14 +996,7 @@ public class MainView extends AppCompatActivity implements View.OnLongClickListe
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main_view);
 
-        /* Start the CPP code */
-        android_on_create_form();
-
-        initializeBLE();
-
-        // Create HMI
-        //sleep(200);
-        //data_pool myDataPoolAccessor = new data_pool();
+                //initializeBLE();
 
         Log.e("CPP Interface", "Num of elements: " + Integer.toString(data_pool.get_main_view_elements_of_interest_count()));
         /* Retrieve the currently displayed OBD data from Data Pool */
@@ -1110,77 +1007,10 @@ public class MainView extends AppCompatActivity implements View.OnLongClickListe
 
     }
 
-
-    // Handles various events fired by the Service.
-    // ACTION_GATT_CONNECTED: connected to a GATT server.
-    // ACTION_GATT_DISCONNECTED: disconnected from a GATT server.
-    // ACTION_GATT_SERVICES_DISCOVERED: discovered GATT services.
-    // ACTION_DATA_AVAILABLE: received data from the device.  This can be a result of read
-    //                        or notification operations.
-    private final BroadcastReceiver mGattUpdateReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            final String action = intent.getAction();
-            if (BluetoothService.ACTION_GATT_CONNECTED.equals(action)) {
-                //mConnected = true;
-                //updateConnectionState(R.string.connected);
-                //invalidateOptionsMenu();
-            } else if (BluetoothService.ACTION_GATT_DISCONNECTED.equals(action)) {
-                //mConnected = false;
-                //updateConnectionState(R.string.disconnected);
-                //invalidateOptionsMenu();
-                //clearUI();
-            } else if (BluetoothService.ACTION_GATT_SERVICES_DISCOVERED.equals(action)) {
-                // Show all the supported services and characteristics on the user interface.
-                //displayGattServices(mBluetoothLeService.getSupportedGattServices());
-            } else if (BluetoothService.ACTION_DATA_AVAILABLE.equals(action)) {
-                //displayData(intent.getStringExtra(BluetoothLeService.EXTRA_DATA));
-                if (intent.hasExtra(BluetoothService.EXTRA_DATA))
-                {
-                    final byte[] data = intent.getByteArrayExtra(BluetoothService.EXTRA_DATA);
-                    if (data != null && data.length > 0)
-                    {
-                        /* Forward received data to C++ */
-                        //String string_data = new String(data);
-                        //Log.d("Bluetooth", "Data received (length " + Integer.toString(data.length) +  " ), forwarning...");
-
-                        /* Get the UUID */
-                        //final String uuid = intent.getStringExtra(BluetoothService.EXTRA_SENDER_UUID);
-
-                        //android_ble_data_received(uuid.getBytes(), uuid.length(), data, data.length);
-                        //mBluetoothService.sendBytes("test", "test".getBytes());
-                    } else
-                    {
-                        Log.d("Bluetooth", "Main window invalid data!");
-                    }
-                }
-            }
-            else
-            {
-                Log.d("Bluetooth", "Unknown broadcast received: " + action);
-            }
-        }
-    };
-
-    private static IntentFilter makeGattUpdateIntentFilter() {
-        final IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(BluetoothService.ACTION_GATT_CONNECTED);
-        intentFilter.addAction(BluetoothService.ACTION_GATT_DISCONNECTED);
-        intentFilter.addAction(BluetoothService.ACTION_GATT_SERVICES_DISCOVERED);
-        intentFilter.addAction(BluetoothService.ACTION_DATA_AVAILABLE);
-        return intentFilter;
-    }
-
-
-
-
     @Override
     protected void onResume()
     {
-
-
         super.onResume();
-        registerReceiver(mGattUpdateReceiver, makeGattUpdateIntentFilter());
 
         /* Populate the main view */
         clearMainView();
@@ -1192,16 +1022,7 @@ public class MainView extends AppCompatActivity implements View.OnLongClickListe
     @Override
     protected void onPause() {
         super.onPause();
-        unregisterReceiver(mGattUpdateReceiver);
     }
-
-        /**
-     * A native method that is implemented by the 'native-lib' native library,
-     * which is packaged with this application.
-     */
-    public native void android_on_create_form();
-   // public native void android_ble_data_received(byte[] uuid, int uuid_length, byte[] value, int length);
-    //public native void android_hmi_trigger_state_machine(int new_state);
 
     Runnable mUpdateOBDValuesRunnable = new Runnable() {
         @Override
