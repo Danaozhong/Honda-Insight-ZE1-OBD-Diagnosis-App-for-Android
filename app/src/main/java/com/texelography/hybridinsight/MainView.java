@@ -15,6 +15,7 @@ import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.net.Uri;
 import android.provider.MediaStore;
+import android.support.constraint.ConstraintLayout;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.view.MotionEventCompat;
@@ -83,6 +84,12 @@ class OBDDataViewLayoutParameters implements Cloneable
         miRow = 0;
         miCol = 0;
         mboVisible = true;
+    }
+
+    public String oToString()
+    {
+        return "Col: " + Integer.toString(miCol) + ", Row: " + Integer.toString(miRow)
+                + ", ColSpan: " + Integer.toString(miColspan) + ", RowSpan: " + Integer.toString(miRowspan);
     }
 
     public int miColspan;
@@ -549,11 +556,13 @@ public class MainView extends AppCompatActivity implements View.OnLongClickListe
                 continue;
             }
 
-            if (layoutParameter.miRow + layoutParameter.miRowspan - 1 > gridLayout.getRowCount() ||
-                    layoutParameter.miCol + layoutParameter.miColspan - 1 > gridLayout.getColumnCount()
-                    )
+            if (layoutParameter.miRow + layoutParameter.miRowspan > gridLayout.getRowCount() ||
+                    layoutParameter.miCol + layoutParameter.miColspan > gridLayout.getColumnCount())
             {
                 // TODO Exception invalid layout
+                Log.d("EXCEPTION","Unexpected layout parameters. RowCount: " + Integer.toString(gridLayout.getRowCount())
+                        + ", ColCount: " + Integer.toString(gridLayout.getColumnCount())
+                        + ", layout: " + layoutParameter.oToString());
                 oOBDDataView.setVisibility(View.INVISIBLE);
                 continue;
             }
@@ -566,29 +575,27 @@ public class MainView extends AppCompatActivity implements View.OnLongClickListe
             LayoutParams lpGl = new GridLayout.LayoutParams(rowSpec, colSpec);
             oOBDDataView.setLayoutParams(lpGl);
         }
+        ConstraintLayout mainView = (ConstraintLayout) findViewById(R.id.mainLayout);
+        int iWidth = mainView.getWidth();
+        int iHeight = mainView.getHeight();
 
-        ViewGroup vg = findViewById(R.id.mainLayout);
-        int width = vg.getWidth();
-        int height = vg.getHeight();
-
-        miCellWidth = height / i32NumOfRows;
-        miCellHeight = width / i32NumOfCols;
+        miCellHeight = iHeight / i32NumOfRows;
+        miCellWidth = iWidth / i32NumOfCols;
 
         for (int i = 0; i < obdDataViews.size(); ++i)
         {
             DataView obdValueBar = obdDataViews.get(i);
             OBDDataViewLayoutParameters obdLayout = aLayoutParams.get(i);
             LayoutParams params = obdValueBar.getLayoutParams();
-
-            //params.width = miCellWidth;
-            //params.height = miCellHeight;
-
             params.width = miCellWidth * obdLayout.miColspan;
             params.height = miCellHeight * obdLayout.miRowspan;
-            obdValueBar.setLayoutParams(params);
+
+            // Seems like android does some relayouting when calling set Layout parameters.
+            // It works without calling setLayoutParams(), perhaps a TODO for the future.
+            //obdValueBar.setLayoutParams(params);
         }
         gridLayout.forceLayout();
-        vg.invalidate();
+        mainView.invalidate();
     }
 
     private void vEnableEditMode(int iIndex)
@@ -758,9 +765,11 @@ public class MainView extends AppCompatActivity implements View.OnLongClickListe
             case MotionEvent.ACTION_UP: {
                 mActivePointerId = INVALID_POINTER_ID;
                 this.maoPointerParameters.clear();
-
-                this.vDisableResizeMode(true);
-
+                if (this.enGUIEditMode != OBDDataEditMode.EDIT_MODE_NONE)
+                {
+                    vRedrawEditModeRect();
+                    this.vDisableResizeMode(true);
+                }
                 Log.d("MTOUCH","Action up!");
                 break;
             }
@@ -770,7 +779,11 @@ public class MainView extends AppCompatActivity implements View.OnLongClickListe
                 mActivePointerId = INVALID_POINTER_ID;
                 this.maoPointerParameters.clear();
 
-                this.vDisableResizeMode(true);
+                if (this.enGUIEditMode != OBDDataEditMode.EDIT_MODE_NONE)
+                {
+                    vRedrawEditModeRect();
+                    this.vDisableResizeMode(true);
+                }
                 break;
             }
 
@@ -839,6 +852,8 @@ public class MainView extends AppCompatActivity implements View.OnLongClickListe
 
         gridLayout.setRowCount(i32NumOfRows);
         gridLayout.setColumnCount(i32NumOfCols);
+        Log.d("LAYOUT", "Setting table size to: " + Integer.toString(i32NumOfCols)
+                + ", " + Integer.toString(i32NumOfRows));
     }
 
     @Override
@@ -956,6 +971,11 @@ public class MainView extends AppCompatActivity implements View.OnLongClickListe
         /* Clear the old (dummy) GUI content */
         GridLayout gridLayout = (GridLayout) findViewById(R.id.valueContainer);
         gridLayout.removeAllViewsInLayout();
+
+        // Delete all the old OBD data bars
+        this.obdDataViews.clear();
+        this.obdDataViewLayoutParams.clear();
+        this.objindex = 0;
     }
 
     protected void populateMainView()
@@ -998,7 +1018,6 @@ public class MainView extends AppCompatActivity implements View.OnLongClickListe
 
                 //initializeBLE();
 
-        Log.e("CPP Interface", "Num of elements: " + Integer.toString(data_pool.get_main_view_elements_of_interest_count()));
         /* Retrieve the currently displayed OBD data from Data Pool */
 
         /* Create a runnable to cyclically update the content */
@@ -1016,7 +1035,6 @@ public class MainView extends AppCompatActivity implements View.OnLongClickListe
         clearMainView();
         this.setTableSize(4,3);
         populateMainView();
-
     }
 
     @Override

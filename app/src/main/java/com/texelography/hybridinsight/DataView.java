@@ -105,7 +105,7 @@ public class DataView extends View
     {
         this.mWidth = (float)widthMeasureSpec;
         this.mHeight = (float)heightMeasureSpec;
-        setMeasuredDimension((int)this.mWidth, (int)this.mHeight);
+        setMeasuredDimension(widthMeasureSpec, heightMeasureSpec);
     }
 
     @Override

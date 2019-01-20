@@ -5,22 +5,32 @@
     android:id="@+id/mainLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:layout_margin="0dp"
+    android:minHeight="0dp"
+    android:padding="0dp"
     app:layout_constraintLeft_toLeftOf="parent"
     app:layout_constraintRight_toRightOf="parent"
     tools:context="com.texelography.hybridinsight.MainView">
 
     <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:layout_margin="0dp"
+        android:padding="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
         <GridLayout
             android:id="@+id/valueContainer"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_margin="0dp"
             android:columnCount="2"
             android:columnOrderPreserved="true"
             android:orientation="horizontal"
+            android:padding="0dp"
             android:rowCount="4"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
@@ -31,7 +41,7 @@
 
             <com.texelography.hybridinsight.DataView
                 android:id="@+id/dataView2"
-                android:layout_width="100dp"
+                android:layout_width="540px"
                 android:layout_height="100dp"
                 android:layout_gravity="fill"
                 app:caption="Ladestrom"
@@ -64,6 +74,7 @@
             android:layout_alignLeft="@id/valueContainer"
             android:layout_alignRight="@id/valueContainer"
             android:layout_alignTop="@id/valueContainer"
+            android:visibility="invisible"
             app:srcCompat="@color/colorLightGray"
             tools:layout_editor_absoluteX="120dp"
             tools:layout_editor_absoluteY="256dp" />
