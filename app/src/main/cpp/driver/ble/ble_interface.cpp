@@ -31,7 +31,7 @@ void MyCallbacks::receive_callback(const std::vector<unsigned char> &rx_buffer)
     {
         /* Invalid data received! */
         this->current_message.clear();
-        TRACE_PRINTF("Invalid message received (less than two bytes)");
+        DEBUG_PRINTF("Invalid message received (less than two bytes)");
         return;
     }
 
@@ -39,7 +39,7 @@ void MyCallbacks::receive_callback(const std::vector<unsigned char> &rx_buffer)
     {
         /* Invalid data received! */
         this->current_message.clear();
-        TRACE_PRINTF("Invalid message received (invalid start byte)");
+        DEBUG_PRINTF("Invalid message received (invalid start byte)");
         return;
     }
 
@@ -148,7 +148,7 @@ BLEInterfaceCharacteristic* BLEClientInterface::get_characteristic(int id)
     {
         if (itr->get_index() == id)
         {
-            //TRACE_PRINTF("Index found, " + helper::to_string(id));
+            //DEBUG_PRINTF("Index found, " + helper::to_string(id));
             return &(*itr);
         }
     }

@@ -31,7 +31,7 @@ Thread::~Thread()
 
 int Thread::start()
 {
-    TRACE_PRINTF("Task " + this->name + " started!");
+    DEBUG_PRINTF("Task " + this->name + " started!");
     this->start_task(4096, 1, [](void* o){ static_cast<Thread*>(o)->run(); });
     return 0;
 }
@@ -47,7 +47,7 @@ int Thread::start_task(size_t stack_size, size_t priority, void (*fp)(void*))
 
 int Thread::stop()
 {
-    TRACE_PRINTF("Sending thread " + this->name + " to stop!");
+    DEBUG_PRINTF("Sending thread " + this->name + " to stop!");
     this->terminate = true;
     return 0;
 }
@@ -62,7 +62,7 @@ int Thread::join()
     this->thread_handle->join();
     this->thread_handle = nullptr;
     this->terminate = false;
-    TRACE_PRINTF("Thread " + this->name + " stopped!");
+    DEBUG_PRINTF("Thread " + this->name + " stopped!");
     return 0;
 }
 
@@ -70,7 +70,7 @@ int Thread::join()
 
 int CyclicThread::start()
 {
-    TRACE_PRINTF("Starting cyclic Thread " + this->name + "...");
+    DEBUG_PRINTF("Starting cyclic Thread " + this->name + "...");
     this->start_task(4096, 1, [](void* o){ static_cast<CyclicThread*>(o)->main(); });
     return 0;
 }
@@ -81,13 +81,13 @@ CyclicThread::CyclicThread(const std::string &name, const std::chrono::milliseco
 
 void CyclicThread::main()
 {
-    TRACE_PRINTF("Cyclic Thread " + this->name + " started!");
+    DEBUG_PRINTF("Cyclic Thread " + this->name + " started!");
     while (this->terminate == false)
     {
         this->run();
         TaskHelper::sleep_for(std::chrono::milliseconds(this->interval));
     }
-    TRACE_PRINTF("Cyclic Thread " + this->name + " terminated!");
+    DEBUG_PRINTF("Cyclic Thread " + this->name + " terminated!");
 }
 
 
@@ -101,7 +101,7 @@ void ThreadRepository::start_all_threads()
 
 void ThreadRepository::join_all_threads()
 {
-    TRACE_PRINTF("Thread repository will now join all threads!");
+    DEBUG_PRINTF("Thread repository will now join all threads!");
     /* Request all threads to terminate*/
     for (auto itr = this->m_threads.begin(); itr != this->m_threads.end(); ++itr)
     {

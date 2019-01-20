@@ -30,8 +30,8 @@ namespace helper
 }
 
 
-//#define TRACE_PRINTF(arg) debug_log(arg)
-#define TRACE_PRINTF(...) (print_trace(__VA_ARGS__))
+//#define DEBUG_PRINTF(arg) debug_log(arg)
+#define DEBUG_PRINTF(...) (print_trace(__VA_ARGS__))
 
 extern jclass java_jobject_main_view;
 extern jobject java_jobject_main_view_instance;

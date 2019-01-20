@@ -48,7 +48,7 @@ int DiagnosisReaderApplication::application_main()
     /* Give the Java HMI some seconds to start up */
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-    TRACE_PRINTF("Main Thread started!");
+    DEBUG_PRINTF("Main Thread started!");
     /* Create dummy signals for testing */
     for(auto obd_value : obd_ii_diagnosis_data)
     {

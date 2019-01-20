@@ -181,7 +181,8 @@ public class SplashViewActivity extends Activity
                 startActivity(i);
 
                 // close this activity
-                finish();
+                // Currently, not possible, would leak the BLE object. BLE object needs somehow kept
+                //finish();
 
             } else if (BluetoothService.ACTION_GATT_DISCONNECTED.equals(action)) {
                 //mConnected = false;

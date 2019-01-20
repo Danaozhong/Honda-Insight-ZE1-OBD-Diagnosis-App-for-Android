@@ -43,12 +43,12 @@ OBDData* OBDData::create_from_obd_value(const OBDValue &obd_value)
 OBDData::OBDData(int identifier, const std::string &description, const std::string &unit)
         : identifier(identifier), description(description), unit(unit)
 {
-    TRACE_PRINTF("Data" + this->get_description() + " is being destroyed!");
+    DEBUG_PRINTF("Data" + this->get_description() + " is being destroyed!");
 }
 
 OBDData::~OBDData()
 {
-    TRACE_PRINTF("Data" + this->get_description() + " is being destroyed!");
+    DEBUG_PRINTF("Data" + this->get_description() + " is being destroyed!");
 }
 
 int OBDData::get_data_identifier() const

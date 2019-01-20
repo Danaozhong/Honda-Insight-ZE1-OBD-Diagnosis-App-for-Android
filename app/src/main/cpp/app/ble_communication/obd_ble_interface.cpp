@@ -47,18 +47,18 @@ OBDDataCyclicReceiverThread::OBDDataCyclicReceiverThread(const std::string &name
 
 void OBDDataCyclicReceiverThread::run()
 {
-    //TRACE_PRINTF("Worker Thread for OBD Data started!");
+    //DEBUG_PRINTF("Worker Thread for OBD Data started!");
     while(true)
     {
         std::vector<unsigned char> obd_data = {};
-        TRACE_PRINTF("OBD data thread: try to receive");
+        DEBUG_PRINTF("OBD data thread: try to receive");
         if (ble_obd_data_client.server_receive_data(BLE_CHARACTERISTIC_ID_SEND_OBD_DATA,
                                                        obd_data, std::chrono::seconds(1)) == 0)
         {
-            TRACE_PRINTF("OBD data thread: rec successful");
+            DEBUG_PRINTF("OBD data thread: rec successful");
             if (obd_data.size() <= 6)
             {
-                TRACE_PRINTF("Received OBD data packet is empty, actual size is: " + helper::to_string(obd_data.size()));
+                DEBUG_PRINTF("Received OBD data packet is empty, actual size is: " + helper::to_string(obd_data.size()));
                 continue;
             }
 
@@ -76,7 +76,7 @@ void OBDDataCyclicReceiverThread::run()
                 if (nullptr == base_obd_data)
                 {
                     /* Error occured, could not find the OBD data with this identifier */
-                    TRACE_PRINTF("Error occured, identifier " + helper::to_string(static_cast<int>(identifier)) + " not found in OBD Data!");
+                    DEBUG_PRINTF("Error occured, identifier " + helper::to_string(static_cast<int>(identifier)) + " not found in OBD Data!");
                     break;
                 }
                 const size_t data_size = base_obd_data->get_value_size();
@@ -111,11 +111,11 @@ void OBDDataCyclicReceiverThread::run()
             //std::vector<unsigned char> data_bytes(data_to_send.begin(), data_to_send.end());
             //send_ble_data("6E400002-B5A3-F393-E0A9-E50E24DCCA2E", data_bytes);
 
-            //TRACE_PRINTF("RECEIVED OBD Data via different interface, length is: " + std::string(obd_data.begin(), obd_data.end()));
+            //DEBUG_PRINTF("RECEIVED OBD Data via different interface, length is: " + std::string(obd_data.begin(), obd_data.end()));
         }
         else
         {
-            TRACE_PRINTF("Did not receive any OBD Data!");
+            DEBUG_PRINTF("Did not receive any OBD Data!");
         }
     }
 }
@@ -167,7 +167,7 @@ void OBDClientThread::run()
                 if(0 == ble_obd_client.server_receive_any_command(BLE_CHARACTERISTIC_ID_SEND_COMMANDS,
                                                                   received_command, &received_value, std::chrono::milliseconds(100)))
                 {
-                    TRACE_PRINTF("Received command signal!");
+                    DEBUG_PRINTF("Received command signal!");
 
                     last_rx_timestamp = std::chrono::system_clock::now();
                     /* TODO Check packet content */
@@ -209,7 +209,7 @@ void OBDClientThread::run()
                 if (std::chrono::system_clock::now() - last_rx_timestamp > std::chrono::seconds(10))
                 {
                     /*Nothing received within 10 seconds, abort! */
-                    TRACE_PRINTF("Nothing received within 10 seconds!");
+                    DEBUG_PRINTF("Nothing received within 10 seconds!");
                     //this->ble_obd_client.m_bo_is_connected = false;
                 }
 
@@ -223,7 +223,7 @@ void OBDClientThread::run()
                             BLECommand::BLE_COMMAND_CLIENT_KEEP_ALIVE, &heartbeat_data))
                     {
                         /* Sending heartbeat failed, close connection. */
-                        TRACE_PRINTF("Error: Sending heartbeat failed, exiting!");
+                        DEBUG_PRINTF("Error: Sending heartbeat failed, exiting!");
                         //this->ble_obd_client.m_bo_is_connected = false;
                     }
                     last_tx_timestamp = std::chrono::system_clock::now();
@@ -248,7 +248,7 @@ BLEOBDDataClient::BLEOBDDataClient()
 
 void BLEOBDDataClient::startup()
 {
-    TRACE_PRINTF("Startup of BLE OBD Server called!");
+    DEBUG_PRINTF("Startup of BLE OBD Server called!");
     if (this->server_is_running == true)
     {
         return;
@@ -296,18 +296,35 @@ int BLEOBDDataClient::initialize_client_connection()
 {
     this->connection_state = CONNECTION_STATE_INIT;
 
-    TRACE_PRINTF("Starting client connection...");
+    DEBUG_PRINTF("Starting client connection...");
     /* Receive encryption key request */
-    if (this->server_receive_command(BLE_CHARACTERISTIC_ID_SEND_COMMANDS,
-                                     BLECommand::BLE_COMMAND_REQUEST_ENCRYPTION_KEY, NULL) != 0)
+
+    int iAttempts = 0;
+    bool boSuccess = false;
+    while (iAttempts < 3)
     {
-        /* No request for encryption key received */
-        TRACE_PRINTF("No request for encryption key received, avorting!");
+        iAttempts++;
+        if (this->server_receive_command(BLE_CHARACTERISTIC_ID_SEND_COMMANDS,
+                                         BLECommand::BLE_COMMAND_REQUEST_ENCRYPTION_KEY, NULL) == 0)
+        {
+            boSuccess = true;
+            break;
+        }
+        else
+        {
+            DEBUG_PRINTF(helper::to_string(iAttempts) + " request for Encryption key timeout.");
+        }
+    }
+
+    if (boSuccess == false)
+    {
+        // No request for encryption key received
+        DEBUG_PRINTF("No request for encryption key received, aborting!");
         this->connection_state = CONNECTION_STATE_DISCONNECTED;
         return -1;
     }
 
-    TRACE_PRINTF("Send encryption key...");
+    DEBUG_PRINTF("Send encryption key...");
     /* Send the server our encryption key */
     std::vector<unsigned char> encryption_key = get_client_public_encryption_key();
     if (0 != this->server_send_command(BLE_CHARACTERISTIC_ID_RECEIVE_COMMANDS,
@@ -319,7 +336,7 @@ int BLEOBDDataClient::initialize_client_connection()
     }
 
     /* Wait for the encryption key of the server */
-    TRACE_PRINTF("Client connected, initializing encryption...");
+    DEBUG_PRINTF("Client connected, initializing encryption...");
     this->connection_state = CONNECTION_STATE_INIT_ENCRYPTION;
     std::vector<unsigned char> server_public_encryption_key;
     if (this->server_receive_command(BLE_CHARACTERISTIC_ID_SEND_COMMANDS,
@@ -359,7 +376,7 @@ int BLEOBDDataClient::initialize_client_connection()
     if (this->server_send_command(BLE_CHARACTERISTIC_ID_RECEIVE_COMMANDS,
                                   BLECommand::BLE_COMMAND_OBD_DATA_HASH, &client_obd_data_hash) != 0)
     {
-        TRACE_PRINTF("Sending the client obd data hash failed!");
+        DEBUG_PRINTF("Sending the client obd data hash failed!");
         this->connection_state = CONNECTION_STATE_DISCONNECTED;
         return -1;
     }
@@ -367,7 +384,7 @@ int BLEOBDDataClient::initialize_client_connection()
     /* Successfully managed to read the OBD Data hash */
     /* TODO compare the hashes */
 
-    TRACE_PRINTF("Connection established!");
+    DEBUG_PRINTF("Connection established!");
     this->connection_state = CONNECTION_STATE_CONNECTED;
     return 0;
 }
@@ -407,7 +424,7 @@ int BLEOBDDataClient::server_receive_command(int characteristic_id, const std::v
     if(0 == server_receive_any_command(characteristic_id, actually_received_command,
                                        &actually_received_value, timeout))
     {
-        TRACE_PRINTF("Expected command:  " + helper::to_string((char)command[0]) +  ", actual command: " + helper::to_string((char)actually_received_command[0]));
+        DEBUG_PRINTF("Expected command:  " + helper::to_string((char)command[0]) +  ", actual command: " + helper::to_string((char)actually_received_command[0]));
         if (actually_received_command[0] == command[0])
         {
             if (nullptr != value)
@@ -511,13 +528,13 @@ void BLEOBDDataClient::receive_from_characteristic(int characteristic_id, const 
     }
     if (data_received_complete[characteristic_id] == true)
     {
-        TRACE_PRINTF("Still got data");
+        DEBUG_PRINTF("Still got data");
         return;
     }
 
     if (characteristic_id == BLE_CHARACTERISTIC_ID_SEND_OBD_DATA)
     {
-        TRACE_PRINTF("Received something via the OBD interface, will acquire mutex no!");
+        DEBUG_PRINTF("Received something via the OBD interface, will acquire mutex no!");
     }
     {
         /* Signalise waiting thread that data has been received */
